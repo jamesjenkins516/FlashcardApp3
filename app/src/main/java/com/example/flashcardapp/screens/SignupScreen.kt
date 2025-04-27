@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.flashcardapp.auth.AuthService
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignupScreen(navController: NavController) {
     var email by remember { mutableStateOf("") }

@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.flashcardapp"
-    compileSdk = 33 // Match with AGP 7.4.0
+    compileSdk = 33 // Match your AGP version (7.4.0)
 
     defaultConfig {
         applicationId = "com.example.flashcardapp"
@@ -31,20 +31,22 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // ✅ Java 17 for both compile and target
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        // ✅ Kotlin JVM target 17
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.0"
+        kotlinCompilerExtensionVersion = "1.4.0" // Compatible with Compose 2023.01.00 BOM
     }
-
     packagingOptions {
         resources {
             excludes.add("/META-INF/{AL2.0,LGPL2.1}")
@@ -58,7 +60,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
     implementation("androidx.activity:activity-compose:1.7.2")
 
-    // Compose
+    // Jetpack Compose
     implementation(platform("androidx.compose:compose-bom:2023.01.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -66,7 +68,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.navigation:navigation-compose:2.5.3")
 
-    // Room
+    // Room (Database)
     implementation("androidx.room:room-runtime:2.5.2")
     implementation("androidx.room:room-ktx:2.5.2")
     kapt("androidx.room:room-compiler:2.5.2")
@@ -75,7 +77,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
 
-    // Firebase
+    // Firebase Authentication
     implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
     implementation("com.google.firebase:firebase-auth-ktx")
 
@@ -86,7 +88,7 @@ dependencies {
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.01.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
-    // Debug
+    // Debug (Tooling and UI Test Manifest)
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

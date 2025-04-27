@@ -4,11 +4,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,24 +24,27 @@ fun HomeScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
 ) {
-    // Observe the list of set names from Room as a State<List<String>>
     val setNames by flashcardDao
         .getAllSetNames()
         .collectAsState(initial = emptyList())
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Your Flashcard Sets") }
+            CenterAlignedTopAppBar(
+                title = { Text("StudySets") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // For each set name, show a clickable Text
             setNames.forEach { setName ->
                 Text(
                     text = setName,
@@ -49,7 +53,6 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(vertical = 8.dp)
                         .clickable {
-                            // Navigate to detail, passing the set name as argument
                             navController.navigate("setDetail/$setName")
                         }
                 )

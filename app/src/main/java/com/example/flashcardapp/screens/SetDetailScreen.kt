@@ -19,95 +19,116 @@ fun SetDetailScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
-    // Collect the list of Flashcards for this set
     val cards by flashcardDao
         .getFlashcardsForSet(setName)
         .collectAsState(initial = emptyList())
 
     Scaffold(
+        // Purple header with centered title only
         topBar = {
-            TopAppBar(
-                // no title — removes the set name next to the back arrow
-                title = { /* empty */ },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                }
+            CenterAlignedTopAppBar(
+                title = { Text(setName) },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
+                // no navigationIcon here
+                modifier = Modifier.fillMaxWidth()
             )
-        }
-    ) { padding ->
-        if (cards.isEmpty()) {
-            Box(
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+        ) {
+            // 1) Back arrow in the white area, aligned to start
+            IconButton(
+                onClick = { navController.popBackStack() },
                 modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
+                    .padding(start = 16.dp, top = 8.dp)
+                    .size(36.dp)
             ) {
-                Text(
-                    text = "No cards in this set yet.",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyMedium
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back"
                 )
             }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                var currentIndex by remember { mutableStateOf(0) }
-                var showAnswer by remember { mutableStateOf(false) }
-                val card = cards[currentIndex]
 
-                Card(
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 2) The rest of your content
+            if (cards.isEmpty()) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .clickable { showAnswer = !showAnswer },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                        .fillMaxSize()
+                        .padding(16.dp)
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text(
-                            text = if (showAnswer) card.answer else card.question,
-                            modifier = Modifier.padding(16.dp),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
+                    Text(
+                        "No cards in this set yet.",
+                        modifier = Modifier.align(Alignment.Center),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Button(
-                        onClick = {
-                            if (currentIndex > 0) {
-                                currentIndex--
-                                showAnswer = false
-                            }
-                        },
-                        enabled = currentIndex > 0
+                    var currentIndex by remember { mutableStateOf(0) }
+                    var showAnswer  by remember { mutableStateOf(false) }
+                    val card = cards[currentIndex]
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp)
+                            .clickable { showAnswer = !showAnswer },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                     ) {
-                        Text("Previous")
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(
+                                text = if (showAnswer) card.answer else card.question,
+                                modifier = Modifier.padding(16.dp),
+                                style    = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
 
-                    Text("${currentIndex + 1} of ${cards.size}")
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    Button(
-                        onClick = {
-                            if (currentIndex < cards.size - 1) {
-                                currentIndex++
-                                showAnswer = false
-                            }
-                        },
-                        enabled = currentIndex < cards.size - 1
+                    Row(
+                        modifier            = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Next")
+                        Button(
+                            onClick = {
+                                if (currentIndex > 0) {
+                                    currentIndex--
+                                    showAnswer = false
+                                }
+                            },
+                            enabled = currentIndex > 0
+                        ) {
+                            Text("Previous")
+                        }
+
+                        Text("${currentIndex + 1} of ${cards.size}")
+
+                        Button(
+                            onClick = {
+                                if (currentIndex < cards.size - 1) {
+                                    currentIndex++
+                                    showAnswer = false
+                                }
+                            },
+                            enabled = currentIndex < cards.size - 1
+                        ) {
+                            Text("Next")
+                        }
                     }
                 }
             }

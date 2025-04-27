@@ -22,6 +22,11 @@ android {
         }
     }
 
+    kapt {
+        correctErrorTypes = true
+    }
+
+
     buildTypes {
         release {
             isMinifyEnabled = false

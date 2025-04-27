@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.flashcardapp.auth.AuthService
-import com.example.flashcardapp.data.FlashcardDao
 
 @Composable
 fun HomeScreen(

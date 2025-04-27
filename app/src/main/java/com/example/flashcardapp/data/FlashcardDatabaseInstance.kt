@@ -1,17 +1,25 @@
+// app/src/main/java/com/example/flashcardapp/data/FlashcardDatabaseInstance.kt
 package com.example.flashcardapp.data
 
 import android.content.Context
 import androidx.room.Room
 
 object FlashcardDatabaseInstance {
-    lateinit var flashcardDao: FlashcardDao
+    @Volatile private var INSTANCE: FlashcardDatabase? = null
 
-    fun init(context: Context) {
-        val db = Room.databaseBuilder(
-            context.applicationContext,
-            FlashcardDatabase::class.java,
-            "flashcard_database"
-        ).build()
-        flashcardDao = db.flashcardDao()
-    }
+    private fun getDatabase(context: Context): FlashcardDatabase =
+        INSTANCE ?: synchronized(this) {
+            Room.databaseBuilder(
+                context.applicationContext,
+                FlashcardDatabase::class.java,
+                "flashcard.db"
+            )
+                .fallbackToDestructiveMigration()
+                .build()
+                .also { INSTANCE = it }
+        }
+
+    /** Access the DAO property (no parentheses) */
+    fun flashcardDao(context: Context): FlashcardDao =
+        getDatabase(context).flashcardDao
 }

@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/SetDetailScreen.kt
-
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
@@ -13,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.flashcardapp.data.FlashcardDao
-import com.example.flashcardapp.model.Flashcard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,7 +19,7 @@ fun SetDetailScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
-    // Collect the list of Flashcards for this set from the DAO
+    // Collect the list of Flashcards for this set
     val cards by flashcardDao
         .getFlashcardsForSet(setName)
         .collectAsState(initial = emptyList())
@@ -30,7 +27,8 @@ fun SetDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(setName) },
+                // no title — removes the set name next to the back arrow
+                title = { /* empty */ },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -40,7 +38,6 @@ fun SetDetailScreen(
         }
     ) { padding ->
         if (cards.isEmpty()) {
-            // Empty-state message
             Box(
                 modifier = Modifier
                     .padding(padding)
@@ -53,7 +50,6 @@ fun SetDetailScreen(
                 )
             }
         } else {
-            // Flashcard learning UI
             Column(
                 modifier = Modifier
                     .padding(padding)
@@ -62,13 +58,10 @@ fun SetDetailScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // 1. Track which card we’re on, and whether its answer is shown
                 var currentIndex by remember { mutableStateOf(0) }
-                var showAnswer  by remember { mutableStateOf(false) }
-
+                var showAnswer by remember { mutableStateOf(false) }
                 val card = cards[currentIndex]
 
-                // 2. The card itself—tap to toggle question/answer
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -78,7 +71,7 @@ fun SetDetailScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text  = if (showAnswer) card.answer else card.question,
+                            text = if (showAnswer) card.answer else card.question,
                             modifier = Modifier.padding(16.dp),
                             style = MaterialTheme.typography.titleMedium
                         )
@@ -87,7 +80,6 @@ fun SetDetailScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 3. Navigation row: Previous • index/total • Next
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -103,7 +95,9 @@ fun SetDetailScreen(
                     ) {
                         Text("Previous")
                     }
+
                     Text("${currentIndex + 1} of ${cards.size}")
+
                     Button(
                         onClick = {
                             if (currentIndex < cards.size - 1) {

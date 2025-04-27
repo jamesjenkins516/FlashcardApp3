@@ -4,12 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.List
@@ -27,8 +22,8 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.flashcardapp.data.FlashcardDao
 import com.example.flashcardapp.data.FlashcardDatabaseInstance
-import com.example.flashcardapp.screens.CreateSetScreen
 import com.example.flashcardapp.screens.HomeScreen
+import com.example.flashcardapp.screens.CreateSetScreen
 import com.example.flashcardapp.screens.SetDetailScreen
 
 class MainActivity : ComponentActivity() {
@@ -44,75 +39,79 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FlashcardApp() {
     val navController = rememberNavController()
-    val context       = LocalContext.current
-    val flashcardDao: FlashcardDao =
-        FlashcardDatabaseInstance.flashcardDao(context)
+    val context = LocalContext.current
+    val flashcardDao: FlashcardDao = FlashcardDatabaseInstance.flashcardDao(context)
 
-    // Only these two show in the bottom bar
     val tabs = listOf(Screen.Sets, Screen.CreateSet)
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            ) {
                 val backStack by navController.currentBackStackEntryAsState()
                 val currentDest = backStack?.destination
 
                 tabs.forEach { screen ->
                     NavigationBarItem(
-                        selected = currentDest.isTopLevelOf(screen),
-                        onClick  = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+                        selected = currentDest?.route == screen.route,
+                        onClick = {
+                            if (screen == Screen.Sets) {
+                                navController.navigate(Screen.Sets.route) {
+                                    popUpTo(Screen.Sets.route) { inclusive = false }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState    = true
+                            } else {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
                             }
                         },
                         icon = {
                             Icon(
                                 imageVector = when (screen) {
-                                    Screen.Sets      -> Icons.Filled.List
+                                    Screen.Sets -> Icons.Filled.List
                                     Screen.CreateSet -> Icons.Filled.Add
-                                    // This branch is never hit, but keeps the `when` exhaustive
                                     Screen.SetDetail -> Icons.Filled.List
                                 },
                                 contentDescription = screen.label
                             )
                         },
-                        label = { Text(screen.label) }
+                        label = { Text(screen.label) },
+                        alwaysShowLabel = false
                     )
                 }
             }
         }
     ) { paddingValues ->
         NavHost(
-            navController    = navController,
+            navController = navController,
             startDestination = Screen.Sets.route,
-            modifier         = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues)
         ) {
-            // 1) Your list‐of‐sets screen
             composable(Screen.Sets.route) {
                 HomeScreen(navController = navController, flashcardDao = flashcardDao)
             }
-
-            // 2) Your create‐set screen
             composable(Screen.CreateSet.route) {
                 CreateSetScreen(navController = navController, flashcardDao = flashcardDao)
             }
-
-            // 3) The detail screen you already implemented
             composable(
                 route = Screen.SetDetail.route,
                 arguments = listOf(navArgument("setName") {
                     type = NavType.StringType
                 })
             ) { backStackEntry ->
-                val setName = backStackEntry.arguments!!.getString("setName")!!
+                val setName = backStackEntry.arguments?.getString("setName") ?: ""
                 SetDetailScreen(
                     navController = navController,
-                    flashcardDao  = flashcardDao,
-                    setName       = setName
+                    flashcardDao = flashcardDao,
+                    setName = setName
                 )
             }
         }
@@ -120,8 +119,8 @@ fun FlashcardApp() {
 }
 
 sealed class Screen(val route: String, val label: String) {
-    object Sets      : Screen("sets",        "Sets")
-    object CreateSet : Screen("create_set",  "Create")
+    object Sets : Screen("sets", "Sets")
+    object CreateSet : Screen("create_set", "Create")
     object SetDetail : Screen("setDetail/{setName}", "Detail")
 }
 

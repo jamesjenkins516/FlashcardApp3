@@ -19,14 +19,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavDestination
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.flashcardapp.data.FlashcardDatabaseInstance
+import androidx.navigation.navArgument
 import com.example.flashcardapp.data.FlashcardDao
+import com.example.flashcardapp.data.FlashcardDatabaseInstance
 import com.example.flashcardapp.screens.CreateSetScreen
 import com.example.flashcardapp.screens.HomeScreen
+import com.example.flashcardapp.screens.SetDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +48,7 @@ fun FlashcardApp() {
     val flashcardDao: FlashcardDao =
         FlashcardDatabaseInstance.flashcardDao(context)
 
+    // Only these two show in the bottom bar
     val tabs = listOf(Screen.Sets, Screen.CreateSet)
 
     Scaffold(
@@ -56,7 +60,7 @@ fun FlashcardApp() {
                 tabs.forEach { screen ->
                     NavigationBarItem(
                         selected = currentDest.isTopLevelOf(screen),
-                        onClick = {
+                        onClick  = {
                             navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
@@ -70,6 +74,8 @@ fun FlashcardApp() {
                                 imageVector = when (screen) {
                                     Screen.Sets      -> Icons.Filled.List
                                     Screen.CreateSet -> Icons.Filled.Add
+                                    // This branch is never hit, but keeps the `when` exhaustive
+                                    Screen.SetDetail -> Icons.Filled.List
                                 },
                                 contentDescription = screen.label
                             )
@@ -81,23 +87,42 @@ fun FlashcardApp() {
         }
     ) { paddingValues ->
         NavHost(
-            navController     = navController,
-            startDestination  = Screen.Sets.route,
-            modifier          = Modifier.padding(paddingValues)
+            navController    = navController,
+            startDestination = Screen.Sets.route,
+            modifier         = Modifier.padding(paddingValues)
         ) {
+            // 1) Your list‐of‐sets screen
             composable(Screen.Sets.route) {
                 HomeScreen(navController = navController, flashcardDao = flashcardDao)
             }
+
+            // 2) Your create‐set screen
             composable(Screen.CreateSet.route) {
                 CreateSetScreen(navController = navController, flashcardDao = flashcardDao)
+            }
+
+            // 3) The detail screen you already implemented
+            composable(
+                route = Screen.SetDetail.route,
+                arguments = listOf(navArgument("setName") {
+                    type = NavType.StringType
+                })
+            ) { backStackEntry ->
+                val setName = backStackEntry.arguments!!.getString("setName")!!
+                SetDetailScreen(
+                    navController = navController,
+                    flashcardDao  = flashcardDao,
+                    setName       = setName
+                )
             }
         }
     }
 }
 
 sealed class Screen(val route: String, val label: String) {
-    object Sets      : Screen("sets",       "Sets")
-    object CreateSet : Screen("create_set","Create")
+    object Sets      : Screen("sets",        "Sets")
+    object CreateSet : Screen("create_set",  "Create")
+    object SetDetail : Screen("setDetail/{setName}", "Detail")
 }
 
 private fun NavDestination?.isTopLevelOf(screen: Screen): Boolean =

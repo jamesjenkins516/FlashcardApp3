@@ -1,15 +1,13 @@
 // app/src/main/java/com/example/flashcardapp/screens/SetDetailScreen.kt
+
 package com.example.flashcardapp.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,7 +40,7 @@ fun SetDetailScreen(
         }
     ) { padding ->
         if (cards.isEmpty()) {
-            // Empty‐state message
+            // Empty-state message
             Box(
                 modifier = Modifier
                     .padding(padding)
@@ -55,32 +53,70 @@ fun SetDetailScreen(
                 )
             }
         } else {
-            // List all cards in a LazyColumn
-            LazyColumn(
+            // Flashcard learning UI
+            Column(
                 modifier = Modifier
                     .padding(padding)
-                    .padding(16.dp)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                items(cards) { flashcard ->
-                    FlashcardRow(flashcard)
-                    Divider()
+                // 1. Track which card we’re on, and whether its answer is shown
+                var currentIndex by remember { mutableStateOf(0) }
+                var showAnswer  by remember { mutableStateOf(false) }
+
+                val card = cards[currentIndex]
+
+                // 2. The card itself—tap to toggle question/answer
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .clickable { showAnswer = !showAnswer },
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text  = if (showAnswer) card.answer else card.question,
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 3. Navigation row: Previous • index/total • Next
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Button(
+                        onClick = {
+                            if (currentIndex > 0) {
+                                currentIndex--
+                                showAnswer = false
+                            }
+                        },
+                        enabled = currentIndex > 0
+                    ) {
+                        Text("Previous")
+                    }
+                    Text("${currentIndex + 1} of ${cards.size}")
+                    Button(
+                        onClick = {
+                            if (currentIndex < cards.size - 1) {
+                                currentIndex++
+                                showAnswer = false
+                            }
+                        },
+                        enabled = currentIndex < cards.size - 1
+                    ) {
+                        Text("Next")
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun FlashcardRow(flashcard: Flashcard) {
-    Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        Text(
-            text = flashcard.question,
-            style = MaterialTheme.typography.titleMedium
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = flashcard.answer,
-            style = MaterialTheme.typography.bodyMedium
-        )
     }
 }

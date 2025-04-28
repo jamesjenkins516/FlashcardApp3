@@ -1,16 +1,23 @@
 package com.example.flashcardapp.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.flashcardapp.Screen
 import com.example.flashcardapp.data.FlashcardDao
+import com.example.flashcardapp.model.Flashcard
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.clickable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,65 +26,64 @@ fun SetDetailScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
+    // 1) load cards
     val cards by flashcardDao
         .getFlashcardsForSet(setName)
         .collectAsState(initial = emptyList())
 
+    // 2) delete‐confirm dialog state
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    // 3) make the list scrollable
+    val listState: LazyListState = rememberLazyListState()
+
     Scaffold(
-        // Purple header with centered title only
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(setName) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor    = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                // no navigationIcon here
-                modifier = Modifier.fillMaxWidth()
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        Column(
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(
+                top    = innerPadding.calculateTopPadding() + 16.dp,
+                bottom = innerPadding.calculateBottomPadding() + 16.dp,
+                start  = 16.dp,
+                end    = 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier
-                .padding(innerPadding)
+                .fillMaxSize()
         ) {
-            // 1) Back arrow in the white area, aligned to start
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .padding(start = 16.dp, top = 8.dp)
-                    .size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Back"
-                )
+            // Back arrow
+            item {
+                IconButton(onClick = { navController.popBackStack() }) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // 2) The rest of your content
+            // If empty, just show the message
             if (cards.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp)
-                ) {
-                    Text(
-                        "No cards in this set yet.",
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillParentMaxHeight(0.7f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("No cards in this set yet.")
+                    }
                 }
             } else {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
+                // Your flashcard cards
+                item {
                     var currentIndex by remember { mutableStateOf(0) }
                     var showAnswer  by remember { mutableStateOf(false) }
                     val card = cards[currentIndex]
@@ -98,10 +104,11 @@ fun SetDetailScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(Modifier.height(24.dp))
 
+                    // Prev/Next row
                     Row(
-                        modifier            = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Button(
@@ -112,9 +119,7 @@ fun SetDetailScreen(
                                 }
                             },
                             enabled = currentIndex > 0
-                        ) {
-                            Text("Previous")
-                        }
+                        ) { Text("Previous") }
 
                         Text("${currentIndex + 1} of ${cards.size}")
 
@@ -126,12 +131,50 @@ fun SetDetailScreen(
                                 }
                             },
                             enabled = currentIndex < cards.size - 1
-                        ) {
-                            Text("Next")
-                        }
+                        ) { Text("Next") }
                     }
                 }
             }
+
+            // Finally, the delete button at bottom of list
+            item {
+                Spacer(Modifier.height(24.dp))
+                Button(
+                    onClick = { showDeleteDialog = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor   = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Delete Set")
+                }
+            }
+        }
+
+        // Confirmation dialog
+        if (showDeleteDialog) {
+            AlertDialog(
+                onDismissRequest = { showDeleteDialog = false },
+                title   = { Text("Delete \"$setName\"?") },
+                text    = { Text("This will remove all cards in this set. Are you sure?") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDeleteDialog = false
+                        coroutineScope.launch {
+                            flashcardDao.deleteFlashcardsForSet(setName)
+                            navController.popBackStack(Screen.Sets.route, false)
+                        }
+                    }) { Text("Delete") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

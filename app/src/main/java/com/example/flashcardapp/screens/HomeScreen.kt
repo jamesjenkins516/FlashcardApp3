@@ -3,8 +3,10 @@ package com.example.flashcardapp.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -51,12 +53,18 @@ fun HomeScreen(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         LazyColumn(
+            // Preserve the scaffold's top/bottom insets and add horizontal padding
             contentPadding      = innerPadding,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            // Increase spacing between each item to 16.dp
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier            = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+            // Optional extra space before the first card
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
             items(setNames) { setName ->
                 Card(
                     modifier  = Modifier
@@ -75,7 +83,7 @@ fun HomeScreen(
                             modifier = Modifier.weight(1f)
                         )
                         Icon(
-                            imageVector      = Icons.Default.ChevronRight,
+                            imageVector        = Icons.Default.ChevronRight,
                             contentDescription = "Go to $setName"
                         )
                     }

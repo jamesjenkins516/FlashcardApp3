@@ -24,4 +24,8 @@ interface FlashcardDao {
 
     @Query("DELETE FROM flashcards WHERE setName = :setName")
     suspend fun deleteFlashcardsForSet(setName: String)
+
 }
+
+
+

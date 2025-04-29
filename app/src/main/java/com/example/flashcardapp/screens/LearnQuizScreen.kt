@@ -4,6 +4,8 @@ package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -42,6 +44,9 @@ fun LearnQuizScreen(
 
     val card = questions.getOrNull(currentIndex)
 
+    // allow vertical scrolling when content is tall (e.g. landscape)
+    val scrollState = rememberScrollState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -74,9 +79,10 @@ fun LearnQuizScreen(
         }
 
         Column(
-            modifier            = Modifier
+            modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -85,6 +91,7 @@ fun LearnQuizScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
+            // Build four options (1 correct + 3 wrong)
             val options = remember(allCards, currentIndex) {
                 val wrongs = allCards
                     .filter   { it.question != card.question }
@@ -151,7 +158,7 @@ fun LearnQuizScreen(
                 }
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(16.dp))
         }
 
         if (showScoreDialog) {

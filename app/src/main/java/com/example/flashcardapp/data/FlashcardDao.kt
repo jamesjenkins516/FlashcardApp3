@@ -9,23 +9,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface FlashcardDao {
-    @Query("SELECT DISTINCT setName FROM flashcards")
-    fun getAllSetNames(): Flow<List<String>>
+    /** Only return distinct set names for this user */
+    @Query("SELECT DISTINCT setName FROM flashcards WHERE userId = :userId")
+    fun getAllSetNames(userId: String): Flow<List<String>>
 
-    @Query("SELECT * FROM flashcards WHERE setName = :setName")
-    fun getFlashcardsForSet(setName: String): Flow<List<Flashcard>>
-
-    // ← NEW: fetch every flashcard in the database
-    @Query("SELECT * FROM flashcards")
-    fun getAllFlashcards(): Flow<List<Flashcard>>
+    /** Only return cards for this user’s set */
+    @Query("SELECT * FROM flashcards WHERE setName = :setName AND userId = :userId")
+    fun getFlashcardsForSet(setName: String, userId: String): Flow<List<Flashcard>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFlashcard(flashcard: Flashcard)
 
-    @Query("DELETE FROM flashcards WHERE setName = :setName")
-    suspend fun deleteFlashcardsForSet(setName: String)
-
+    @Query("DELETE FROM flashcards WHERE setName = :setName AND userId = :userId")
+    suspend fun deleteFlashcardsForSet(setName: String, userId: String)
 }
-
-
-

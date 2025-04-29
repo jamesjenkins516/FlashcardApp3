@@ -2,22 +2,13 @@ package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.flashcardapp.Screen
 import com.example.flashcardapp.data.FlashcardDao
+import com.google.firebase.auth.FirebaseAuth
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,9 +16,10 @@ fun LearnSelectionScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
 ) {
-    // Observe all set names
-    val sets by flashcardDao
-        .getAllSetNames()
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+        ?: return
+
+    val sets by flashcardDao.getAllSetNames(userId)
         .collectAsState(initial = emptyList())
 
     Scaffold(
@@ -42,7 +34,7 @@ fun LearnSelectionScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier
+            modifier            = Modifier
                 .padding(padding)
                 .fillMaxSize()
                 .padding(16.dp),
@@ -53,12 +45,12 @@ fun LearnSelectionScreen(
                     modifier  = Modifier
                         .fillMaxWidth()
                         .clickable { navController.navigate("learn/$setName") },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    elevation = CardDefaults.cardElevation(4.dp)
                 ) {
                     Text(
-                        text     = setName,
-                        modifier = Modifier.padding(16.dp),
-                        style    = MaterialTheme.typography.bodyLarge
+                        text  = setName,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
                     )
                 }
             }

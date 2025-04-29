@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/LoginScreen.kt
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.layout.*
@@ -64,7 +63,7 @@ fun LoginScreen(navController: NavController) {
                     } else {
                         auth.signInWithEmailAndPassword(email.trim(), password)
                             .addOnSuccessListener {
-                                navController.navigate("home") {
+                                navController.navigate("sets") {
                                     popUpTo("login") { inclusive = true }
                                 }
                             }

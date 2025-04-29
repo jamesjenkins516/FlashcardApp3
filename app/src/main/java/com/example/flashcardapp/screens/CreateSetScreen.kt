@@ -4,12 +4,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -34,7 +36,13 @@ fun CreateSetScreen(
 ) {
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Create Flashcard Set") })
+            CenterAlignedTopAppBar(
+                title = { Text("Create Flashcard Set") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         }
     ) { padding ->
         Box(
@@ -44,7 +52,7 @@ fun CreateSetScreen(
         ) {
             CreateSetScreenContent(
                 flashcardDao = flashcardDao,
-                onDone = { navController.popBackStack() }
+                onDone       = { navController.popBackStack() }
             )
         }
     }
@@ -57,58 +65,54 @@ fun CreateSetScreenContent(
     onDone: () -> Unit
 ) {
     var setName by remember { mutableStateOf("") }
-    val entries = remember { mutableStateListOf(Pair("", "")) }
-    val scrollState = rememberScrollState()
-    val coroutineScope = rememberCoroutineScope()
+    val entries   = remember { mutableStateListOf(Pair("", "")) }
+    val scroll    = rememberScrollState()
+    val scope     = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
-            .verticalScroll(scrollState)
+            .verticalScroll(scroll)
             .padding(16.dp)
     ) {
         OutlinedTextField(
-            value = setName,
+            value       = setName,
             onValueChange = { setName = it },
-            label = { Text("Set Name") },
-            modifier = Modifier.fillMaxWidth()
+            label       = { Text("Set Name") },
+            modifier    = Modifier.fillMaxWidth()
         )
+        Spacer(Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        entries.forEachIndexed { index, (question, answer) ->
+        entries.forEachIndexed { idx, (q, a) ->
             OutlinedTextField(
-                value = question,
-                onValueChange = { newQ -> entries[index] = newQ to answer },
-                label = { Text("Question ${index + 1}") },
-                modifier = Modifier.fillMaxWidth()
+                value       = q,
+                onValueChange = { newQ -> entries[idx] = newQ to a },
+                label       = { Text("Question ${idx + 1}") },
+                modifier    = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
-                value = answer,
-                onValueChange = { newA -> entries[index] = question to newA },
-                label = { Text("Answer ${index + 1}") },
-                modifier = Modifier.fillMaxWidth()
+                value       = a,
+                onValueChange = { newA -> entries[idx] = q to newA },
+                label       = { Text("Answer ${idx + 1}") },
+                modifier    = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(Modifier.height(16.dp))
         }
 
         TextButton(
-            onClick = { entries += "" to "" },
+            onClick  = { entries += "" to "" },
             modifier = Modifier.align(Alignment.Start)
-        ) {
-            Text("Add Question")
-        }
+        ) { Text("Add Question") }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(Modifier.height(24.dp))
 
         Button(
             onClick = {
                 val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
-                if (setName.isNotBlank() && entries.all { it.first.isNotBlank() && it.second.isNotBlank() }) {
-                    coroutineScope.launch {
+                if (setName.isNotBlank()
+                    && entries.all { it.first.isNotBlank() && it.second.isNotBlank() }
+                ) {
+                    scope.launch {
                         entries.forEach { (q, a) ->
                             flashcardDao.insertFlashcard(
                                 Flashcard(
@@ -123,7 +127,8 @@ fun CreateSetScreenContent(
                     }
                 }
             },
-            enabled = setName.isNotBlank() && entries.all { it.first.isNotBlank() && it.second.isNotBlank() },
+            enabled  = setName.isNotBlank()
+                    && entries.all { it.first.isNotBlank() && it.second.isNotBlank() },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Save Flashcards")

@@ -26,13 +26,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.flashcardapp.data.FlashcardDao
 import com.example.flashcardapp.data.FlashcardDatabaseInstance
-import com.example.flashcardapp.screens.CreateSetScreen
-import com.example.flashcardapp.screens.HomeScreen
-import com.example.flashcardapp.screens.LearnSelectionScreen
-import com.example.flashcardapp.screens.LearnQuizScreen
-import com.example.flashcardapp.screens.SetDetailScreen
+import com.example.flashcardapp.screens.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,97 +42,101 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun FlashcardApp() {
     val navController = rememberNavController()
-    val context = LocalContext.current
-    val flashcardDao: FlashcardDao = FlashcardDatabaseInstance.flashcardDao(context)
+    val context       = LocalContext.current
+    val flashcardDao  = FlashcardDatabaseInstance.flashcardDao(context)
 
-    // Tabs that appear in the bottom navigation bar
-    val tabs = listOf(Screen.Sets, Screen.CreateSet, Screen.Learn)
+    // Determine whether to show bottom bar
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute    = backStackEntry?.destination?.route
+    val showBottomBar   = currentRoute != "login" && currentRoute != "signup"
 
     Scaffold(
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            ) {
-                val backStack by navController.currentBackStackEntryAsState()
-                val currentRoute = backStack?.destination?.route
-
-                tabs.forEach { screen ->
-                    NavigationBarItem(
-                        selected = currentRoute == screen.route,
-                        onClick = {
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
+            if (showBottomBar) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor   = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    val tabs = listOf(Screen.Sets, Screen.CreateSet, Screen.Learn)
+                    tabs.forEach { screen ->
+                        NavigationBarItem(
+                            selected    = currentRoute == screen.route,
+                            onClick     = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState    = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = when (screen) {
-                                    Screen.Sets      -> Icons.Filled.List
-                                    Screen.CreateSet -> Icons.Filled.Add
-                                    Screen.Learn     -> Icons.Filled.School
-                                    Screen.LearnQuiz -> Icons.Filled.School    // not shown in bar
-                                    Screen.SetDetail -> Icons.Filled.List      // not shown in bar
-                                },
-                                contentDescription = screen.label
-                            )
-                        },
-                        label = { Text(screen.label) },
-                        alwaysShowLabel = false
-                    )
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = when (screen) {
+                                        Screen.Sets      -> Icons.Filled.List
+                                        Screen.CreateSet -> Icons.Filled.Add
+                                        Screen.Learn     -> Icons.Filled.School
+                                        else             -> Icons.Filled.List
+                                    },
+                                    contentDescription = screen.label
+                                )
+                            },
+                            label = { Text(screen.label) },
+                            alwaysShowLabel = false
+                        )
+                    }
                 }
             }
         }
     ) { innerPadding ->
         NavHost(
-            navController = navController,
-            startDestination = Screen.Sets.route,
-            modifier = Modifier.padding(innerPadding)
+            navController   = navController,
+            startDestination = "login",
+            modifier         = Modifier.padding(innerPadding)
         ) {
-            // Home screen: list of sets
+            // **Auth flow**
+            composable("login")  { LoginScreen(navController) }
+            composable("signup") { SignupScreen(navController) }
+
+            // **Main tabs**
             composable(Screen.Sets.route) {
                 HomeScreen(navController, flashcardDao)
             }
-            // Create a new set
             composable(Screen.CreateSet.route) {
                 CreateSetScreen(navController, flashcardDao)
             }
-            // Learn: first pick a set
             composable(Screen.Learn.route) {
                 LearnSelectionScreen(navController, flashcardDao)
             }
-            // LearnQuiz: quiz on the selected set
+
+            // **Hidden/detail routes**
             composable(
                 route = Screen.LearnQuiz.route,
                 arguments = listOf(navArgument("setName") {
                     type = NavType.StringType
                 })
-            ) { backStackEntry ->
-                val setName = backStackEntry.arguments?.getString("setName") ?: ""
+            ) { backStack ->
+                val setName = backStack.arguments?.getString("setName") ?: ""
                 LearnQuizScreen(navController, flashcardDao, setName)
             }
-            // Detail view of a set's flashcards
             composable(
                 route = Screen.SetDetail.route,
                 arguments = listOf(navArgument("setName") {
                     type = NavType.StringType
                 })
-            ) { backStackEntry ->
-                val setName = backStackEntry.arguments?.getString("setName") ?: ""
+            ) { backStack ->
+                val setName = backStack.arguments?.getString("setName") ?: ""
                 SetDetailScreen(navController, flashcardDao, setName)
             }
         }
     }
 }
 
+// Reuse your existing sealed class for routes:
 sealed class Screen(val route: String, val label: String) {
-    object Sets      : Screen("sets",        "Sets")
-    object CreateSet : Screen("create_set",  "Create")      // gfdgdfgdf
-    object Learn     : Screen("learn",       "Learn")       // tab: pick a set
-    object LearnQuiz : Screen("learn/{setName}", "Quiz")     // hidden: actual quiz
+    object Sets      : Screen("sets",       "Sets")
+    object CreateSet : Screen("create_set", "Create")
+    object Learn     : Screen("learn",      "Learn")
+    object LearnQuiz : Screen("learn/{setName}",   "Quiz")
     object SetDetail : Screen("setDetail/{setName}", "Detail")
 }

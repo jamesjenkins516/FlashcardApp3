@@ -31,19 +31,24 @@ fun SignupScreen(navController: NavController) {
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Password") },
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = {
-                    AuthService.signup(email, password,
-                        onSuccess = { navController.navigate("home") },
+                    AuthService.signup(
+                        email.trim(),
+                        password,
+                        onSuccess = {
+                            navController.navigate("sets") {
+                                popUpTo("signup") { inclusive = true }
+                            }
+                        },
                         onFailure = { error = it.message }
                     )
                 },
@@ -51,18 +56,16 @@ fun SignupScreen(navController: NavController) {
             ) {
                 Text("Signup")
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+            Spacer(Modifier.height(8.dp))
             Button(
                 onClick = { navController.navigate("login") },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Back to Login")
             }
-
-            if (error != null) {
-                Text(error ?: "", color = MaterialTheme.colorScheme.error)
+            error?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(it, color = MaterialTheme.colorScheme.error)
             }
         }
     }

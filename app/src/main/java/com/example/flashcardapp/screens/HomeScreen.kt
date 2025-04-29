@@ -7,12 +7,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.example.flashcardapp.data.FlashcardDao
 import com.google.firebase.auth.FirebaseAuth
 
@@ -36,25 +38,40 @@ fun HomeScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 navigationIcon = {
-                    // ⚙️ Settings button
-                    IconButton(onClick = onSettingsClick) {
+                    // ◀️ Sign Out button
+                    IconButton(onClick = {
+                        FirebaseAuth.getInstance().signOut()
+                        navController.navigate("login") {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                        }
+                    }) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Open Settings"
+                            imageVector = Icons.Default.ExitToApp,
+                            contentDescription = "Sign Out"
                         )
                     }
                 },
                 title = { Text("Your Flashcard Sets") },
+                actions = {
+                    // ⚙️ Settings button on the right
+                    IconButton(onClick = onSettingsClick) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = "Settings"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor    = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }
-        // Note: no floatingActionButton here, so "New Set" button is gone
+        // no FAB here
     ) { innerPadding ->
         LazyColumn(
-            // add extra 16.dp between the TopAppBar and first item
             contentPadding = PaddingValues(
                 top    = innerPadding.calculateTopPadding() + 16.dp,
                 bottom = innerPadding.calculateBottomPadding()

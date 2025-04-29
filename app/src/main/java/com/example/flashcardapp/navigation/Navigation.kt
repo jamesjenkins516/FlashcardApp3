@@ -1,3 +1,5 @@
+// app/src/main/java/com/example/flashcardapp/navigation/Navigation.kt
+
 package com.example.flashcardapp.navigation
 
 import androidx.compose.runtime.*
@@ -7,35 +9,33 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.flashcardapp.data.FlashcardDatabaseInstance
-import com.example.flashcardapp.screens.CreateSetScreen
-import com.example.flashcardapp.screens.HomeScreen
-import com.example.flashcardapp.screens.LoginScreen
-import com.example.flashcardapp.screens.SetDetailScreen
-import com.example.flashcardapp.screens.SettingsScreen
-import com.example.flashcardapp.screens.SignupScreen
+import com.example.flashcardapp.screens.*
 import com.example.flashcardapp.ui.theme.FlashcardAppTheme
 
 @Composable
 fun Navigation() {
-    // ❶ Hold the dark/light flag in remembered state
+    // ❶ Theme toggle state
     var darkThemeEnabled by rememberSaveable { mutableStateOf(false) }
 
     val navController = rememberNavController()
     val context       = LocalContext.current
     val dao           = FlashcardDatabaseInstance.flashcardDao(context)
 
-    // ❷ Wrap all routes in your theme
+    // ❷ Wrap everything in your theme
     FlashcardAppTheme(darkTheme = darkThemeEnabled) {
         NavHost(
             navController    = navController,
             startDestination = "login"
         ) {
+            // Auth flow
             composable("login") {
                 LoginScreen(navController)
             }
             composable("signup") {
                 SignupScreen(navController)
             }
+
+            // Main screens
             composable("home") {
                 HomeScreen(
                     navController    = navController,
@@ -46,20 +46,38 @@ fun Navigation() {
             composable("create") {
                 CreateSetScreen(navController = navController, flashcardDao = dao)
             }
+
+            // Detail view
             composable(
                 route = "setDetail/{setName}",
-                arguments = listOf(
-                    navArgument("setName") { type = NavType.StringType }
-                )
+                arguments = listOf(navArgument("setName") {
+                    type = NavType.StringType
+                })
             ) { backStackEntry ->
-                val setName = backStackEntry.arguments?.getString("setName")!!
+                val setName = backStackEntry.arguments!!.getString("setName")!!
                 SetDetailScreen(
                     navController = navController,
                     flashcardDao  = dao,
                     setName       = setName
                 )
             }
-            // ➕ New Settings route
+
+            // Edit screen
+            composable(
+                route = "edit/{setName}",
+                arguments = listOf(navArgument("setName") {
+                    type = NavType.StringType
+                })
+            ) { backStackEntry ->
+                val setName = backStackEntry.arguments!!.getString("setName")!!
+                EditSetScreen(
+                    navController      = navController,
+                    flashcardDao       = dao,
+                    originalSetName    = setName
+                )
+            }
+
+            // Settings screen
             composable("settings") {
                 SettingsScreen(
                     navController      = navController,

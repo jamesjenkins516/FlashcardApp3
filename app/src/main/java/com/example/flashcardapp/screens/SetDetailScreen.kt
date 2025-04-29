@@ -1,3 +1,5 @@
+// app/src/main/java/com/example/flashcardapp/screens/SetDetailScreen.kt
+
 package com.example.flashcardapp.screens
 
 import android.app.DatePickerDialog
@@ -13,6 +15,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.flashcardapp.Screen
+import com.example.flashcardapp.navigation.Screen
 import com.example.flashcardapp.data.FlashcardDao
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -33,82 +36,31 @@ fun SetDetailScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
-    // 1) Load only this user’s cards for the set
-    val userId = FirebaseAuth.getInstance().currentUser?.uid
-        ?: return
+    // Load cards
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val cards by flashcardDao
         .getFlashcardsForSet(setName, userId)
         .collectAsState(initial = emptyList())
 
     val context = LocalContext.current
-    var showDatePicker by remember { mutableStateOf(false) }
+    val scope   = rememberCoroutineScope()
+
+    // UI state
+    var showDatePicker   by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
 
-    // 2) If empty, show a simple message & Back arrow, then bail out
-    if (cards.isEmpty()) {
-        Scaffold(
-            topBar = {
-                CenterAlignedTopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    title = { Text(setName) },
-                    actions = {
-                        IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Default.Event, contentDescription = "Schedule Test")
-                        }
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor    = MaterialTheme.colorScheme.primaryContainer,
-                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                )
-            }
-        ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No cards in this set yet.", style = MaterialTheme.typography.bodyLarge)
-            }
+    // Track which card to show, and whether it's flipped
+    var currentIndex by remember { mutableStateOf(0) }
+    var showAnswer   by remember { mutableStateOf(false) }
 
-            // date picker even in empty state
-            if (showDatePicker) {
-                val today = Calendar.getInstance()
-                DatePickerDialog(
-                    context,
-                    { _, year, month, day ->
-                        val begin = Calendar.getInstance().apply {
-                            set(year, month, day, 9, 0)
-                        }.timeInMillis
-                        Intent(Intent.ACTION_INSERT).also { intent ->
-                            intent.data = CalendarContract.Events.CONTENT_URI
-                            intent.putExtra(CalendarContract.Events.TITLE, "Test: $setName")
-                            intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, begin)
-                            intent.putExtra(CalendarContract.EXTRA_EVENT_END_TIME, begin + 60*60*1000)
-                            intent.putExtra(
-                                CalendarContract.Events.DESCRIPTION,
-                                "Review set \"$setName\" before test"
-                            )
-                            context.startActivity(intent)
-                        }
-                        showDatePicker = false
-                    },
-                    today.get(Calendar.YEAR),
-                    today.get(Calendar.MONTH),
-                    today.get(Calendar.DAY_OF_MONTH)
-                ).show()
-            }
-        }
-        return
+    // Clamp index whenever the list changes
+    LaunchedEffect(cards.size) {
+        currentIndex = currentIndex.coerceIn(
+            0,
+            (cards.lastIndex).coerceAtLeast(0)
+        )
     }
 
-    // 3) Otherwise we have ≥1 card
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -131,26 +83,37 @@ fun SetDetailScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        val listState: LazyListState = rememberLazyListState()
+        // Early return for empty state
+        if (cards.isEmpty()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No cards in this set yet.", style = MaterialTheme.typography.bodyLarge)
+            }
+            return@Scaffold
+        }
 
-        LazyColumn(
-            state = listState,
-            contentPadding = PaddingValues(
-                top    = innerPadding.calculateTopPadding() + 16.dp,
-                bottom = innerPadding.calculateBottomPadding() + 16.dp,
-                start  = 16.dp,
-                end    = 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+        // Otherwise, we have ≥1 card
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            item {
-                var currentIndex by remember { mutableStateOf(0) }
-                var showAnswer   by remember { mutableStateOf(false) }
+            val listState: LazyListState = rememberLazyListState()
+            LazyColumn(
+                state          = listState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier       = Modifier.fillMaxSize()
+            ) {
+                item {
+                    // Safely grab the current card
+                    val card = cards.getOrNull(currentIndex) ?: return@item
 
-                // Guard against empty or OOB
-                val card = cards.getOrNull(currentIndex)
-                if (card != null) {
+                    // Flip‐card display
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -158,118 +121,122 @@ fun SetDetailScreen(
                             .clickable { showAnswer = !showAnswer },
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier.padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Text(
-                                text    = if (showAnswer) card.answer else card.question,
-                                style   = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(16.dp)
+                                text  = if (showAnswer) card.answer else card.question,
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                     }
 
                     Spacer(Modifier.height(24.dp))
 
+                    // Prev / Next row
                     Row(
-                        modifier            = Modifier.fillMaxWidth(),
+                        Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Button(
-                            onClick = {
-                                if (currentIndex > 0) {
-                                    currentIndex--
-                                    showAnswer = false
-                                }
-                            },
+                            onClick = { currentIndex-- ; showAnswer = false },
                             enabled = currentIndex > 0
                         ) { Text("Previous") }
 
                         Text("${currentIndex + 1} of ${cards.size}")
 
                         Button(
-                            onClick = {
-                                if (currentIndex < cards.lastIndex) {
-                                    currentIndex++
-                                    showAnswer = false
-                                }
-                            },
+                            onClick = { currentIndex++ ; showAnswer = false },
                             enabled = currentIndex < cards.lastIndex
                         ) { Text("Next") }
                     }
-                }
-            }
 
-            item {
-                Spacer(Modifier.height(24.dp))
-                Button(
-                    onClick = { showDeleteDialog = true },
-                    colors  = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor   = MaterialTheme.colorScheme.onError
-                    ),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Delete Set")
-                }
-            }
-        }
+                    Spacer(Modifier.height(24.dp))
 
-        // Confirmation dialog: navigate back first, then delete
-        if (showDeleteDialog) {
-            AlertDialog(
-                onDismissRequest = { showDeleteDialog = false },
-                title            = { Text("Delete \"$setName\"?") },
-                text             = { Text("This will remove all cards in this set. Are you sure?") },
-                confirmButton    = {
-                    TextButton(onClick = {
-                        showDeleteDialog = false
-                        navController.popBackStack(Screen.Sets.route, false)
-                        scope.launch {
-                            flashcardDao.deleteFlashcardsForSet(setName, userId)
+                    // Delete Set + Edit Set buttons
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Button(
+                            onClick = { showDeleteDialog = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor   = MaterialTheme.colorScheme.onError
+                            )
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Delete Set")
                         }
-                    }) {
-                        Text("Delete")
-                    }
-                },
-                dismissButton    = {
-                    TextButton(onClick = { showDeleteDialog = false }) {
-                        Text("Cancel")
+
+                        OutlinedButton(onClick = {
+                            navController.navigate(
+                                Screen.EditSet.route.replace("{setName}", setName)
+                            )
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Edit Set")
+                        }
                     }
                 }
-            )
-        }
+            }
 
-        // Date picker for scheduling
-        if (showDatePicker) {
-            val today = Calendar.getInstance()
-            DatePickerDialog(
-                context,
-                { _, year, month, dayOfMonth ->
-                    val beginTime = Calendar.getInstance().apply {
-                        set(year, month, dayOfMonth, 9, 0)
-                    }.timeInMillis
-
-                    Intent(Intent.ACTION_INSERT).also { intent ->
-                        intent.data = CalendarContract.Events.CONTENT_URI
-                        intent.putExtra(CalendarContract.Events.TITLE, "Test: $setName")
-                        intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, beginTime)
-                        intent.putExtra(
-                            CalendarContract.EXTRA_EVENT_END_TIME,
-                            beginTime + 60 * 60 * 1000
-                        )
-                        intent.putExtra(
-                            CalendarContract.Events.DESCRIPTION,
-                            "Review set \"$setName\" before test"
-                        )
-                        context.startActivity(intent)
+            // Delete confirmation dialog
+            if (showDeleteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteDialog = false },
+                    title            = { Text("Delete \"$setName\"?") },
+                    text             = { Text("This will remove all cards in this set. Are you sure?") },
+                    confirmButton    = {
+                        TextButton(onClick = {
+                            showDeleteDialog = false
+                            navController.popBackStack(Screen.Sets.route, false)
+                            scope.launch {
+                                flashcardDao.deleteFlashcardsForSet(setName, userId)
+                            }
+                        }) { Text("Delete") }
+                    },
+                    dismissButton    = {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancel")
+                        }
                     }
-                    showDatePicker = false
-                },
-                today.get(Calendar.YEAR),
-                today.get(Calendar.MONTH),
-                today.get(Calendar.DAY_OF_MONTH)
-            ).show()
+                )
+            }
+
+            // DatePicker for scheduling
+            if (showDatePicker) {
+                val today = Calendar.getInstance()
+                DatePickerDialog(
+                    context,
+                    { _, y, m, d ->
+                        val start = Calendar.getInstance().apply {
+                            set(y, m, d, 9, 0)
+                        }.timeInMillis
+                        Intent(Intent.ACTION_INSERT).also {
+                            it.data = CalendarContract.Events.CONTENT_URI
+                            it.putExtra(CalendarContract.Events.TITLE, "Test: $setName")
+                            it.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, start)
+                            it.putExtra(
+                                CalendarContract.EXTRA_EVENT_END_TIME,
+                                start + 60*60*1000
+                            )
+                            it.putExtra(
+                                CalendarContract.Events.DESCRIPTION,
+                                "Review set \"$setName\" before test"
+                            )
+                            context.startActivity(it)
+                        }
+                        showDatePicker = false
+                    },
+                    today.get(Calendar.YEAR),
+                    today.get(Calendar.MONTH),
+                    today.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }
         }
     }
 }

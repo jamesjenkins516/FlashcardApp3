@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
@@ -18,6 +19,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.example.flashcardapp.data.FlashcardDatabaseInstance
+import com.example.flashcardapp.navigation.Screen
 import com.example.flashcardapp.screens.*
 import com.example.flashcardapp.ui.theme.FlashcardAppTheme
 
@@ -33,19 +35,19 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FlashcardApp() {
-    // ❶ Theme toggle state
+    // theme toggle
     var darkThemeEnabled by rememberSaveable { mutableStateOf(false) }
 
     FlashcardAppTheme(darkTheme = darkThemeEnabled) {
         val navController = rememberNavController()
         val context       = LocalContext.current
-        val flashcardDao  = FlashcardDatabaseInstance.flashcardDao(context)
+        val dao           = FlashcardDatabaseInstance.flashcardDao(context)
 
-        // Determine whether to show bottom bar
+        // bottom-bar visibility
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute    = backStackEntry?.destination?.route
-        val showBottomBar   = currentRoute != "login"
-                && currentRoute != "signup"
+        val showBottomBar   = currentRoute != Screen.Login.route
+                && currentRoute != Screen.Signup.route
                 && currentRoute != Screen.Settings.route
 
         Scaffold(
@@ -89,49 +91,54 @@ fun FlashcardApp() {
         ) { innerPadding ->
             NavHost(
                 navController    = navController,
-                startDestination = "login",
+                startDestination = Screen.Login.route,
                 modifier         = Modifier.padding(innerPadding)
             ) {
-                // **Auth flow**
-                composable("login")  { LoginScreen(navController)  }
-                composable("signup") { SignupScreen(navController) }
+                // auth
+                composable(Screen.Login.route)  { LoginScreen(navController) }
+                composable(Screen.Signup.route) { SignupScreen(navController) }
 
-                // **Main tabs**
+                // main tabs
                 composable(Screen.Sets.route) {
                     HomeScreen(
                         navController    = navController,
-                        flashcardDao     = flashcardDao,
+                        flashcardDao     = dao,
                         onSettingsClick  = { navController.navigate(Screen.Settings.route) }
                     )
                 }
                 composable(Screen.CreateSet.route) {
-                    CreateSetScreen(navController, flashcardDao)
+                    CreateSetScreen(navController, dao)
                 }
                 composable(Screen.Learn.route) {
-                    LearnSelectionScreen(navController, flashcardDao)
+                    LearnSelectionScreen(navController, dao)
                 }
 
-                // **Hidden/detail routes**
+                // detail & quiz
                 composable(
-                    route      = Screen.LearnQuiz.route,
-                    arguments  = listOf(navArgument("setName") {
-                        type = NavType.StringType
-                    })
-                ) { backStack ->
-                    val setName = backStack.arguments?.getString("setName") ?: ""
-                    LearnQuizScreen(navController, flashcardDao, setName)
+                    route     = Screen.LearnQuiz.route,
+                    arguments = listOf(navArgument("setName") { type = NavType.StringType })
+                ) { back ->
+                    val setName = back.arguments!!.getString("setName")!!
+                    LearnQuizScreen(navController, dao, setName)
                 }
                 composable(
-                    route      = Screen.SetDetail.route,
-                    arguments  = listOf(navArgument("setName") {
-                        type = NavType.StringType
-                    })
-                ) { backStack ->
-                    val setName = backStack.arguments?.getString("setName") ?: ""
-                    SetDetailScreen(navController, flashcardDao, setName)
+                    route     = Screen.SetDetail.route,
+                    arguments = listOf(navArgument("setName") { type = NavType.StringType })
+                ) { back ->
+                    val setName = back.arguments!!.getString("setName")!!
+                    SetDetailScreen(navController, dao, setName)
                 }
 
-                // ➕ Settings screen
+                // ⚙️ edit set
+                composable(
+                    route     = Screen.EditSet.route,
+                    arguments = listOf(navArgument("setName") { type = NavType.StringType })
+                ) { back ->
+                    val setName = back.arguments!!.getString("setName")!!
+                    EditSetScreen(navController, dao, setName)
+                }
+
+                // settings
                 composable(Screen.Settings.route) {
                     SettingsScreen(
                         navController      = navController,
@@ -142,13 +149,4 @@ fun FlashcardApp() {
             }
         }
     }
-}
-
-sealed class Screen(val route: String, val label: String) {
-    object Sets      : Screen("sets",       "Sets")
-    object CreateSet : Screen("create_set", "Create")
-    object Learn     : Screen("learn",      "Learn")
-    object LearnQuiz : Screen("learn/{setName}",   "Quiz")
-    object SetDetail : Screen("setDetail/{setName}", "Detail")
-    object Settings  : Screen("settings",   "Settings")
 }

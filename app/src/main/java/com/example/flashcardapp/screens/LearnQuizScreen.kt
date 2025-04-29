@@ -1,23 +1,19 @@
+// app/src/main/java/com/example/flashcardapp/screens/LearnQuizScreen.kt
+
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.flashcardapp.Screen
+import com.example.flashcardapp.navigation.Screen
 import com.example.flashcardapp.data.FlashcardDao
 import com.google.firebase.auth.FirebaseAuth
 
@@ -29,8 +25,7 @@ fun LearnQuizScreen(
     setName: String
 ) {
     // 1) Get current userId
-    val userId = FirebaseAuth.getInstance().currentUser?.uid
-        ?: return
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
     // 2) Load & shuffle only this user’s cards for the set
     val allCards by flashcardDao
@@ -49,7 +44,20 @@ fun LearnQuizScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Quiz: $setName") })
+            CenterAlignedTopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.popBackStack(Screen.Learn.route, false)
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                title = { Text("Quiz: $setName") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
         }
     ) { padding ->
         if (card == null) {
@@ -77,7 +85,6 @@ fun LearnQuizScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // Build four options (1 correct + 3 wrong)
             val options = remember(allCards, currentIndex) {
                 val wrongs = allCards
                     .filter   { it.question != card.question }
@@ -117,7 +124,7 @@ fun LearnQuizScreen(
 
             val isLast = currentIndex == questions.lastIndex
             Row(
-                modifier            = Modifier.fillMaxWidth(),
+                modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 Button(
@@ -149,14 +156,14 @@ fun LearnQuizScreen(
 
         if (showScoreDialog) {
             AlertDialog(
-                onDismissRequest = { /*block*/ },
+                onDismissRequest = { /* no-op */ },
                 title            = { Text("Quiz Completed") },
                 text             = { Text("You scored $correctCount out of ${questions.size}") },
                 confirmButton    = {
                     TextButton(onClick = {
                         showScoreDialog = false
                         navController.navigate(Screen.Learn.route) {
-                            popUpTo(Screen.Learn.route) { inclusive = false }
+                            popUpTo(Screen.Learn.route) { inclusive = true }
                             launchSingleTop = true
                         }
                     }) {

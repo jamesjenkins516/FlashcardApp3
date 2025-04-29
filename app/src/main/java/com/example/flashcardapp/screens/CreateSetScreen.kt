@@ -1,32 +1,32 @@
+// app/src/main/java/com/example/flashcardapp/screens/CreateSetScreen.kt
+
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavController
+import com.example.flashcardapp.navigation.Screen
 import com.example.flashcardapp.data.FlashcardDao
 import com.example.flashcardapp.model.Flashcard
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+
+class CardUiState(question: String = "", answer: String = "") {
+    var question by mutableStateOf(question)
+    var answer   by mutableStateOf(answer)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,104 +34,118 @@ fun CreateSetScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
 ) {
+    val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    val scope  = rememberCoroutineScope()
+
+    var setName by rememberSaveable { mutableStateOf("") }
+    val cards   = remember { mutableStateListOf(CardUiState()) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Create Flashcard Set") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                title = { Text("Create New Set") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor    = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }
-    ) { padding ->
-        Box(
-            modifier = Modifier
+    ) { innerPadding ->
+        Column(
+            Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CreateSetScreenContent(
-                flashcardDao = flashcardDao,
-                onDone       = { navController.popBackStack() }
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun CreateSetScreenContent(
-    flashcardDao: FlashcardDao,
-    onDone: () -> Unit
-) {
-    var setName by remember { mutableStateOf("") }
-    val entries   = remember { mutableStateListOf(Pair("", "")) }
-    val scroll    = rememberScrollState()
-    val scope     = rememberCoroutineScope()
-
-    Column(
-        modifier = Modifier
-            .verticalScroll(scroll)
-            .padding(16.dp)
-    ) {
-        OutlinedTextField(
-            value       = setName,
-            onValueChange = { setName = it },
-            label       = { Text("Set Name") },
-            modifier    = Modifier.fillMaxWidth()
-        )
-        Spacer(Modifier.height(16.dp))
-
-        entries.forEachIndexed { idx, (q, a) ->
+            // Set Name
             OutlinedTextField(
-                value       = q,
-                onValueChange = { newQ -> entries[idx] = newQ to a },
-                label       = { Text("Question ${idx + 1}") },
-                modifier    = Modifier.fillMaxWidth()
+                value = setName,
+                onValueChange = { setName = it },
+                label = { Text("Set Name") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(8.dp))
-            OutlinedTextField(
-                value       = a,
-                onValueChange = { newA -> entries[idx] = q to newA },
-                label       = { Text("Answer ${idx + 1}") },
-                modifier    = Modifier.fillMaxWidth()
-            )
-            Spacer(Modifier.height(16.dp))
-        }
 
-        TextButton(
-            onClick  = { entries += "" to "" },
-            modifier = Modifier.align(Alignment.Start)
-        ) { Text("Add Question") }
-
-        Spacer(Modifier.height(24.dp))
-
-        Button(
-            onClick = {
-                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return@Button
-                if (setName.isNotBlank()
-                    && entries.all { it.first.isNotBlank() && it.second.isNotBlank() }
+            // Q/A cards
+            cards.forEachIndexed { index, card ->
+                Card(
+                    modifier  = Modifier.fillMaxWidth(),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                 ) {
-                    scope.launch {
-                        entries.forEach { (q, a) ->
-                            flashcardDao.insertFlashcard(
-                                Flashcard(
-                                    setName = setName.trim(),
-                                    question = q.trim(),
-                                    answer = a.trim(),
-                                    userId = userId
-                                )
-                            )
+                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = card.question,
+                            onValueChange = { card.question = it },
+                            label = { Text("Question ${index + 1}") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = card.answer,
+                            onValueChange = { card.answer = it },
+                            label = { Text("Answer ${index + 1}") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        TextButton(
+                            onClick = { cards.removeAt(index) },
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = "Remove")
+                            Spacer(Modifier.width(4.dp))
+                            Text("Remove")
                         }
-                        onDone()
                     }
                 }
-            },
-            enabled  = setName.isNotBlank()
-                    && entries.all { it.first.isNotBlank() && it.second.isNotBlank() },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Save Flashcards")
+            }
+
+            // Add Question link
+            TextButton(onClick = { cards.add(CardUiState()) }) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(4.dp))
+                Text("Add Question")
+            }
+
+            Spacer(Modifier.weight(1f))
+
+            // Save Flashcards
+            Button(
+                onClick = {
+                    val name = setName.trim()
+                    if (name.isNotEmpty()) {
+                        scope.launch {
+                            cards.forEach { c ->
+                                if (c.question.isNotBlank() || c.answer.isNotBlank()) {
+                                    flashcardDao.insertFlashcard(
+                                        Flashcard(
+                                            question = c.question.trim(),
+                                            answer   = c.answer.trim(),
+                                            setName  = name,
+                                            userId   = userId
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                        navController.navigate(
+                            Screen.SetDetail.route.replace("{setName}", name)
+                        ) {
+                            popUpTo(Screen.CreateSet.route) { inclusive = true }
+                        }
+                    }
+                },
+                enabled = setName.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+            ) {
+                Text("Save Flashcards")
+            }
         }
     }
 }

@@ -16,10 +16,13 @@ fun LearnSelectionScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
 ) {
+    // 1) Get current userId
     val userId = FirebaseAuth.getInstance().currentUser?.uid
         ?: return
 
-    val sets by flashcardDao.getAllSetNames(userId)
+    // 2) Observe only this user’s set names
+    val sets by flashcardDao
+        .getAllSetNames(userId)
         .collectAsState(initial = emptyList())
 
     Scaffold(
@@ -40,18 +43,22 @@ fun LearnSelectionScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            sets.forEach { setName ->
-                Card(
-                    modifier  = Modifier
-                        .fillMaxWidth()
-                        .clickable { navController.navigate("learn/$setName") },
-                    elevation = CardDefaults.cardElevation(4.dp)
-                ) {
-                    Text(
-                        text  = setName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
+            if (sets.isEmpty()) {
+                Text("You haven’t created any sets yet.", style = MaterialTheme.typography.bodyLarge)
+            } else {
+                sets.forEach { setName ->
+                    Card(
+                        modifier  = Modifier
+                            .fillMaxWidth()
+                            .clickable { navController.navigate("learn/$setName") },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Text(
+                            text     = setName,
+                            modifier = Modifier.padding(16.dp),
+                            style    = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         }

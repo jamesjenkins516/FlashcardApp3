@@ -1,3 +1,5 @@
+// app/src/main/java/com/example/flashcardapp/screens/HomeScreen.kt
+
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
@@ -5,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +23,7 @@ fun HomeScreen(
     flashcardDao: FlashcardDao,
     onSettingsClick: () -> Unit
 ) {
-    // 1️⃣ Get current user ID (or bail out)
+    // 1️⃣ Get the current user ID (or bail out)
     val userId = FirebaseAuth.getInstance().currentUser?.uid
         ?: return
 
@@ -43,25 +44,21 @@ fun HomeScreen(
                         )
                     }
                 },
-                title = {
-                    Text(text = "Your Flashcard Sets")
-                }
-            )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { navController.navigate("create") },
-                icon = {
-                    Icon(Icons.Default.Add, contentDescription = "New Set")
-                },
-                text = {
-                    Text(text = "New Set")
-                }
+                title = { Text("Your Flashcard Sets") },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor    = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             )
         }
+        // Note: no floatingActionButton here, so "New Set" button is gone
     ) { innerPadding ->
         LazyColumn(
-            contentPadding = innerPadding,
+            // add extra 16.dp between the TopAppBar and first item
+            contentPadding = PaddingValues(
+                top    = innerPadding.calculateTopPadding() + 16.dp,
+                bottom = innerPadding.calculateBottomPadding()
+            ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxSize()
@@ -82,7 +79,7 @@ fun HomeScreen(
                             .padding(16.dp)
                     ) {
                         Text(
-                            text = setName,
+                            text  = setName,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }

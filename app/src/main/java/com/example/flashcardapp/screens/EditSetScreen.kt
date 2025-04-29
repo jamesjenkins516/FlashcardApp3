@@ -7,12 +7,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -35,7 +37,6 @@ fun EditSetScreen(
         .collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
 
-    // State for renaming the set
     var setName by rememberSaveable { mutableStateOf(originalSetName) }
 
     Scaffold(
@@ -46,10 +47,9 @@ fun EditSetScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                title = { Text("Edit “$originalSetName”") },
+                title = { Text("Edit \"$originalSetName\"") },
                 actions = {
                     TextButton(onClick = {
-                        // Rename if changed
                         if (setName.trim() != originalSetName) {
                             scope.launch {
                                 flashcardDao.renameSet(
@@ -59,7 +59,6 @@ fun EditSetScreen(
                                 )
                             }
                         }
-                        // Navigate back into detail screen under (possibly) new name
                         navController.popBackStack()
                         navController.navigate(
                             Screen.SetDetail.route.replace("{setName}", setName.trim())
@@ -92,54 +91,55 @@ fun EditSetScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Existing cards: inline edit + remove
+            // List existing cards with inline edit & remove
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                items(cards) { card ->
+                items(cards) { c ->
                     Card(
                         modifier  = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                     ) {
-                        Column(Modifier.padding(12.dp)) {
-                            var q by remember(card) { mutableStateOf(card.question) }
-                            var a by remember(card) { mutableStateOf(card.answer) }
+                        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            var q by remember(c) { mutableStateOf(c.question) }
+                            var a by remember(c) { mutableStateOf(c.answer) }
 
                             OutlinedTextField(
                                 value = q,
                                 onValueChange = { newQ ->
                                     q = newQ
                                     scope.launch {
-                                        flashcardDao.insertFlashcard(card.copy(question = newQ))
+                                        flashcardDao.insertFlashcard(c.copy(question = newQ))
                                     }
                                 },
                                 label = { Text("Question") },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            Spacer(Modifier.height(8.dp))
-
                             OutlinedTextField(
                                 value = a,
                                 onValueChange = { newA ->
                                     a = newA
                                     scope.launch {
-                                        flashcardDao.insertFlashcard(card.copy(answer = newA))
+                                        flashcardDao.insertFlashcard(c.copy(answer = newA))
                                     }
                                 },
                                 label = { Text("Answer") },
                                 modifier = Modifier.fillMaxWidth()
                             )
 
-                            Spacer(Modifier.height(8.dp))
-
-                            TextButton(onClick = {
-                                scope.launch { flashcardDao.deleteFlashcard(card) }
-                            }) {
-                                Icon(Icons.Default.Delete, contentDescription = null)
-                                Spacer(Modifier.width(4.dp))
-                                Text("Remove")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.End
+                            ) {
+                                TextButton(onClick = {
+                                    scope.launch { flashcardDao.deleteFlashcard(c) }
+                                }) {
+                                    Icon(Icons.Default.Delete, contentDescription = "Remove")
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Remove")
+                                }
                             }
                         }
                     }
@@ -148,7 +148,7 @@ fun EditSetScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Add-Card button: immediately insert a blank card
+            // Add Card immediately (no popup)
             OutlinedButton(
                 onClick = {
                     scope.launch {

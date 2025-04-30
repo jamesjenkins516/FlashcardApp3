@@ -1,4 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/data/FlashcardDatabaseInstance.kt
 package com.example.flashcardapp.data
 
 import android.content.Context
@@ -19,7 +18,7 @@ object FlashcardDatabaseInstance {
                 .also { INSTANCE = it }
         }
 
-    /** Access the DAO property (no parentheses) */
+
     fun flashcardDao(context: Context): FlashcardDao =
         getDatabase(context).flashcardDao
 }

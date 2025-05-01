@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/HomeScreen.kt
-
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
@@ -25,20 +23,20 @@ fun HomeScreen(
     flashcardDao: FlashcardDao,
     onSettingsClick: () -> Unit
 ) {
-    // 1️⃣ Get the current user ID (or bail out)
+    //Logs in user
     val userId = FirebaseAuth.getInstance().currentUser?.uid
         ?: return
 
-    // 2️⃣ Load the list of set names from the DAO
+    //Loads all of the sets from the database (specific to each user)
     val sets by flashcardDao
         .getAllSetNames(userId)
         .collectAsState(initial = emptyList())
 
     Scaffold(
-        topBar = {
+        topBar = { //top bar with sign out button, title, and settings button
             CenterAlignedTopAppBar(
                 navigationIcon = {
-                    // ◀️ Sign Out button
+                    //Sign out button (sings out using firebase and returns to login page)
                     IconButton(onClick = {
                         FirebaseAuth.getInstance().signOut()
                         navController.navigate("login") {
@@ -55,7 +53,7 @@ fun HomeScreen(
                 },
                 title = { Text("Your Flashcard Sets") },
                 actions = {
-                    // ⚙️ Settings button on the right
+                    //Settings button (takes you to settins screen where you can enable dark mode
                     IconButton(onClick = onSettingsClick) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -69,9 +67,9 @@ fun HomeScreen(
                 )
             )
         }
-        // no FAB here
+
     ) { innerPadding ->
-        LazyColumn(
+        LazyColumn( //This gives you all of your flashcard sets and their names
             contentPadding = PaddingValues(
                 top    = innerPadding.calculateTopPadding() + 16.dp,
                 bottom = innerPadding.calculateBottomPadding()

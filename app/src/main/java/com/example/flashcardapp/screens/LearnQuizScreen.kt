@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/LearnQuizScreen.kt
-
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
@@ -26,16 +24,16 @@ fun LearnQuizScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
-    // 1) Get current userId
+    //Login in with firebase
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-    // 2) Load & shuffle only this user’s cards for the set
+    //Load and shuffles a users flashcards (user specific)
     val allCards by flashcardDao
         .getFlashcardsForSet(setName, userId)
         .collectAsState(initial = emptyList())
     val questions = remember(allCards) { allCards.shuffled() }
 
-    // 3) Quiz state
+    //Quiz State
     var currentIndex    by remember { mutableStateOf(0) }
     var correctCount    by remember { mutableStateOf(0) }
     var answerSubmitted by remember { mutableStateOf(false) }
@@ -44,10 +42,10 @@ fun LearnQuizScreen(
 
     val card = questions.getOrNull(currentIndex)
 
-    // allow vertical scrolling when content is tall (e.g. landscape)
+    //Allows for scrolling
     val scrollState = rememberScrollState()
 
-    Scaffold(
+    Scaffold( //title of set you are studying and back button
         topBar = {
             CenterAlignedTopAppBar(
                 navigationIcon = {
@@ -78,7 +76,7 @@ fun LearnQuizScreen(
             return@Scaffold
         }
 
-        Column(
+        Column( //This tells you what question you are on
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
@@ -91,7 +89,7 @@ fun LearnQuizScreen(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            // Build four options (1 correct + 3 wrong)
+            //This adds the correct answer and 3 wrong ones and shuffles the order
             val options = remember(allCards, currentIndex) {
                 val wrongs = allCards
                     .filter   { it.question != card.question }
@@ -130,7 +128,7 @@ fun LearnQuizScreen(
             }
 
             val isLast = currentIndex == questions.lastIndex
-            Row(
+            Row( //sumbit and next buttons
                 modifier              = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
@@ -161,7 +159,7 @@ fun LearnQuizScreen(
             Spacer(Modifier.height(16.dp))
         }
 
-        if (showScoreDialog) {
+        if (showScoreDialog) { //shows you how many you got right out of the toal questions
             AlertDialog(
                 onDismissRequest = { /* no-op */ },
                 title            = { Text("Quiz Completed") },

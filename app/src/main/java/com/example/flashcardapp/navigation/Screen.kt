@@ -1,5 +1,8 @@
 package com.example.flashcardapp.navigation
 
+
+
+//Navigation routes
 sealed class Screen(val route: String, val label: String) {
     object Login     : Screen("login",               "Login")
     object Signup    : Screen("signup",              "Sign Up")

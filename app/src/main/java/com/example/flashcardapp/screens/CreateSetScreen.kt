@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/CreateSetScreen.kt
-
 package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.layout.*
@@ -23,23 +21,32 @@ import com.example.flashcardapp.model.Flashcard
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
+
+
+
 class CardUiState(question: String = "", answer: String = "") {
     var question by mutableStateOf(question)
     var answer   by mutableStateOf(answer)
 }
+
+
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateSetScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
-) {
+) { //gets the user ID from firebase
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val scope  = rememberCoroutineScope()
 
+    //Set name and list of cards
     var setName by rememberSaveable { mutableStateOf("") }
     val cards   = remember { mutableStateListOf(CardUiState()) }
 
+
+    //This is the top bar on the page that says create new set and has backbutton to homepage
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -55,7 +62,7 @@ fun CreateSetScreen(
                 )
             )
         }
-    ) { innerPadding ->
+    ) { innerPadding -> //styling for the flashcard creation text boxes
         Column(
             Modifier
                 .fillMaxSize()
@@ -64,7 +71,7 @@ fun CreateSetScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Set Name
+            //Where you input the name of the set
             OutlinedTextField(
                 value = setName,
                 onValueChange = { setName = it },
@@ -73,7 +80,7 @@ fun CreateSetScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Q/A cards
+            //For each card it shows a Question and Answer text box as well as a remove button
             cards.forEachIndexed { index, card ->
                 Card(
                     modifier  = Modifier.fillMaxWidth(),
@@ -104,7 +111,7 @@ fun CreateSetScreen(
                 }
             }
 
-            // Add Question link
+            //Add question button below the last flashcard (allows you to make a new flashcard)
             TextButton(onClick = { cards.add(CardUiState()) }) {
                 Icon(Icons.Default.Add, contentDescription = null)
                 Spacer(Modifier.width(4.dp))
@@ -113,7 +120,7 @@ fun CreateSetScreen(
 
             Spacer(Modifier.weight(1f))
 
-            // Save Flashcards
+            //Saves the flashcard set and moves you to setdetail screen
             Button(
                 onClick = {
                     val name = setName.trim()

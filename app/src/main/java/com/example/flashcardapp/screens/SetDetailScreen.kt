@@ -1,5 +1,3 @@
-// app/src/main/java/com/example/flashcardapp/screens/SetDetailScreen.kt
-
 package com.example.flashcardapp.screens
 
 import android.app.DatePickerDialog
@@ -36,7 +34,7 @@ fun SetDetailScreen(
     flashcardDao: FlashcardDao,
     setName: String
 ) {
-    // Load cards
+    //Log in with firebase and get cards
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val cards by flashcardDao
         .getFlashcardsForSet(setName, userId)
@@ -45,15 +43,15 @@ fun SetDetailScreen(
     val context = LocalContext.current
     val scope   = rememberCoroutineScope()
 
-    // UI state
+    //UI state
     var showDatePicker   by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Track which card to show, and whether it's flipped
+    //Track which card to show, and whether it's flipped
     var currentIndex by remember { mutableStateOf(0) }
     var showAnswer   by remember { mutableStateOf(false) }
 
-    // Clamp index whenever the list changes
+
     LaunchedEffect(cards.size) {
         currentIndex = currentIndex.coerceIn(
             0,
@@ -83,7 +81,6 @@ fun SetDetailScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
-        // Early return for empty state
         if (cards.isEmpty()) {
             Box(
                 Modifier
@@ -96,7 +93,6 @@ fun SetDetailScreen(
             return@Scaffold
         }
 
-        // Otherwise, we have ≥1 card
         Box(
             Modifier
                 .fillMaxSize()
@@ -110,10 +106,9 @@ fun SetDetailScreen(
                 modifier       = Modifier.fillMaxSize()
             ) {
                 item {
-                    // Safely grab the current card
                     val card = cards.getOrNull(currentIndex) ?: return@item
 
-                    // Flip‐card display
+                    //Flip card
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -134,7 +129,7 @@ fun SetDetailScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Prev / Next row
+                    //Prev / Next card
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -154,7 +149,7 @@ fun SetDetailScreen(
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Delete Set + Edit Set buttons
+                    //Delete Set and Edit Set buttons
                     Row(
                         Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -184,7 +179,7 @@ fun SetDetailScreen(
                 }
             }
 
-            // Delete confirmation dialog
+            //Delete confirmation dialog
             if (showDeleteDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteDialog = false },
@@ -207,7 +202,7 @@ fun SetDetailScreen(
                 )
             }
 
-            // DatePicker for scheduling
+            //DatePicker for scheduling
             if (showDatePicker) {
                 val today = Calendar.getInstance()
                 DatePickerDialog(

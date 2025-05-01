@@ -8,7 +8,7 @@ import androidx.room.Query
 import com.example.flashcardapp.model.Flashcard
 import kotlinx.coroutines.flow.Flow
 
-@Dao
+@Dao //Data access object. These are all of the database operations (Room Database)
 interface FlashcardDao {
 
     //Returns set names to a specific user

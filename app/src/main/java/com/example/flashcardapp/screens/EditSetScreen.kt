@@ -24,14 +24,18 @@ import com.example.flashcardapp.model.Flashcard
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
+
+//Similar to createsetscreen
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditSetScreen(
     navController: NavController,
     flashcardDao: FlashcardDao,
-    originalSetName: String
-) {
+    originalSetName: String  //Name of the set that is being edited
+) { //gets userId
     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+    //Gets all the flashcards that are in this set from the database
     val cards by flashcardDao
         .getFlashcardsForSet(originalSetName, userId)
         .collectAsState(initial = emptyList())
@@ -40,7 +44,7 @@ fun EditSetScreen(
     var setName by rememberSaveable { mutableStateOf(originalSetName) }
 
     Scaffold(
-        topBar = {
+        topBar = { //top bar with back arrow to previous page and save set button
             CenterAlignedTopAppBar(
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
@@ -50,7 +54,7 @@ fun EditSetScreen(
                 title = { Text("Edit \"$originalSetName\"") },
                 actions = {
                     TextButton(onClick = {
-                        if (setName.trim() != originalSetName) {
+                        if (setName.trim() != originalSetName) { //if the user renames the set change the name in the database
                             scope.launch {
                                 flashcardDao.renameSet(
                                     oldName = originalSetName,
@@ -61,7 +65,7 @@ fun EditSetScreen(
                         }
                         navController.popBackStack()
                         navController.navigate(
-                            Screen.SetDetail.route.replace("{setName}", setName.trim())
+                            Screen.SetDetail.route.replace("{setName}", setName.trim()) //after saving the set go back to the setdetail page with the new changes
                         )
                     }) {
                         Text("Save")
@@ -80,7 +84,7 @@ fun EditSetScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
         ) {
-            // Rename field
+            //Rename field
             OutlinedTextField(
                 value = setName,
                 onValueChange = { setName = it },
@@ -91,7 +95,7 @@ fun EditSetScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // List existing cards with inline edit & remove
+            //List existing cards with edit & remove functionality
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
@@ -104,24 +108,24 @@ fun EditSetScreen(
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             var q by remember(c) { mutableStateOf(c.question) }
                             var a by remember(c) { mutableStateOf(c.answer) }
-
+                            //editable question fiels
                             OutlinedTextField(
                                 value = q,
                                 onValueChange = { newQ ->
                                     q = newQ
-                                    scope.launch {
+                                    scope.launch { //changes in database
                                         flashcardDao.insertFlashcard(c.copy(question = newQ))
                                     }
                                 },
                                 label = { Text("Question") },
                                 modifier = Modifier.fillMaxWidth()
                             )
-
+                            //editable answer field
                             OutlinedTextField(
                                 value = a,
                                 onValueChange = { newA ->
                                     a = newA
-                                    scope.launch {
+                                    scope.launch { //changes in database
                                         flashcardDao.insertFlashcard(c.copy(answer = newA))
                                     }
                                 },
@@ -129,6 +133,8 @@ fun EditSetScreen(
                                 modifier = Modifier.fillMaxWidth()
                             )
 
+
+                            //Delete button allows you to remove a flashcard from the set
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.End
@@ -148,7 +154,7 @@ fun EditSetScreen(
 
             Spacer(Modifier.height(16.dp))
 
-            // Add Card immediately (no popup)
+            //Add a new flashcard
             OutlinedButton(
                 onClick = {
                     scope.launch {

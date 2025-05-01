@@ -34,16 +34,19 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+
+
 fun FlashcardApp() {
     // theme toggle
-    var darkThemeEnabled by rememberSaveable { mutableStateOf(false) }
+    var darkThemeEnabled by rememberSaveable { mutableStateOf(false) } //saves theme
 
+    //
     FlashcardAppTheme(darkTheme = darkThemeEnabled) {
         val navController = rememberNavController()
         val context       = LocalContext.current
         val dao           = FlashcardDatabaseInstance.flashcardDao(context)
 
-        // bottom-bar visibility
+        //bottom bar (determines if the screen will have the bottom bar navigation
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute    = backStackEntry?.destination?.route
         val showBottomBar   = currentRoute != Screen.Login.route

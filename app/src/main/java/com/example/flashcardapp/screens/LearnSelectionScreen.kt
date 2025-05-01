@@ -2,11 +2,15 @@ package com.example.flashcardapp.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.flashcardapp.navigation.Screen
 import com.example.flashcardapp.data.FlashcardDao
 import com.google.firebase.auth.FirebaseAuth
 
@@ -16,18 +20,27 @@ fun LearnSelectionScreen(
     navController: NavController,
     flashcardDao: FlashcardDao
 ) {
-    // 1) Get current userId
+    //Login with firbase
     val userId = FirebaseAuth.getInstance().currentUser?.uid
         ?: return
 
-    // 2) Observe only this user’s set names
+    //gets users flashcard sets
     val sets by flashcardDao
         .getAllSetNames(userId)
         .collectAsState(initial = emptyList())
 
     Scaffold(
-        topBar = {
+        topBar = { //top bar with back button (homepage) and title
             CenterAlignedTopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = {
+                        navController.navigate(Screen.Sets.route) {
+                            popUpTo(Screen.Sets.route) { inclusive = false }
+                        }
+                    }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Home")
+                    }
+                },
                 title = { Text("Pick a Set") },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor    = MaterialTheme.colorScheme.primaryContainer,
@@ -36,7 +49,7 @@ fun LearnSelectionScreen(
             )
         }
     ) { padding ->
-        Column(
+        Column( //list the users sets
             modifier            = Modifier
                 .padding(padding)
                 .fillMaxSize()
@@ -44,7 +57,10 @@ fun LearnSelectionScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (sets.isEmpty()) {
-                Text("You haven’t created any sets yet.", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "You haven’t created any sets yet.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
             } else {
                 sets.forEach { setName ->
                     Card(

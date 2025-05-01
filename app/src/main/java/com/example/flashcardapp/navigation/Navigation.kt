@@ -14,20 +14,22 @@ import com.example.flashcardapp.ui.theme.FlashcardAppTheme
 
 @Composable
 fun Navigation() {
-    // ❶ Theme toggle state
+    //Allows you to change app to darkmode
     var darkThemeEnabled by rememberSaveable { mutableStateOf(false) }
 
     val navController = rememberNavController()
     val context       = LocalContext.current
     val dao           = FlashcardDatabaseInstance.flashcardDao(context)
 
-    // ❷ Wrap everything in your theme
+
+
+
     FlashcardAppTheme(darkTheme = darkThemeEnabled) {
         NavHost(
             navController    = navController,
-            startDestination = "login"
+            startDestination = "login"  //login screen when the app first opens
         ) {
-            // Auth flow
+            //Login/Singup
             composable("login") {
                 LoginScreen(navController)
             }
@@ -35,7 +37,7 @@ fun Navigation() {
                 SignupScreen(navController)
             }
 
-            // Main screens
+            //HomeScreen which shows all sets as well as settings button
             composable("home") {
                 HomeScreen(
                     navController    = navController,
@@ -43,11 +45,12 @@ fun Navigation() {
                     onSettingsClick  = { navController.navigate("settings") }
                 )
             }
+            //CreateSetScreen lets you make new flashcard sets
             composable("create") {
                 CreateSetScreen(navController = navController, flashcardDao = dao)
             }
 
-            // Detail view
+            //SetDetailScreen lets you view flashcards, delete them, go to edit set page, and add to test to calendar
             composable(
                 route = "setDetail/{setName}",
                 arguments = listOf(navArgument("setName") {
@@ -62,7 +65,7 @@ fun Navigation() {
                 )
             }
 
-            // Edit screen
+            //Edit Screen where you can modify flashcards or delete them
             composable(
                 route = "edit/{setName}",
                 arguments = listOf(navArgument("setName") {
@@ -77,7 +80,7 @@ fun Navigation() {
                 )
             }
 
-            // Settings screen
+            //Switch between dark and light mode
             composable("settings") {
                 SettingsScreen(
                     navController      = navController,

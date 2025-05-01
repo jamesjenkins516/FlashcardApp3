@@ -3,6 +3,9 @@ package com.example.flashcardapp.data
 import android.content.Context
 import androidx.room.Room
 
+
+
+//This is used to ensure there is only one database for f;ashcards
 object FlashcardDatabaseInstance {
     @Volatile private var INSTANCE: FlashcardDatabase? = null
 

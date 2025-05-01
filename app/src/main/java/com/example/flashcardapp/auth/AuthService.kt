@@ -8,11 +8,13 @@ object AuthService {
     val currentUserId: String?
         get() = auth.currentUser?.uid
 
+
     fun signup(email: String, password: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { onFailure(it) }
     }
+
 
     fun login(email: String, password: String, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         auth.signInWithEmailAndPassword(email, password)

@@ -9,6 +9,8 @@ import com.example.flashcardapp.model.Flashcard
     version = 2,
     exportSchema = false
 )
+
+//Allows you to use methods such as adding or deleting flashcards
 abstract class FlashcardDatabase : RoomDatabase() {
     abstract val flashcardDao: FlashcardDao
 }
